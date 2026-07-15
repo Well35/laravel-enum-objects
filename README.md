@@ -1,7 +1,7 @@
 # laravel-enum-objects
 
 Generate frontend enum objects from your PHP enums, so the backend
-enum is the single source of truth for values and metadata.
+enum is the single source of truth.
 
 Unlike [spatie/laravel-typescript-transformer](https://github.com/spatie/typescript-transformer),
 which generates *types*, this package generates *data*. Your frontend gets 
