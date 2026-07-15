@@ -102,7 +102,7 @@ it('rejects base property keys that collide', function () {
     config()->set('enum-objects.name_key', 'value');
 
     Generator::fromConfig();
-})->throws(EnumObjectsException::class, 'distinct');
+})->throws(EnumObjectsException::class, 'unique');
 
 it('rejects empty base property keys', function () {
     config()->set('enum-objects.value_key', '');

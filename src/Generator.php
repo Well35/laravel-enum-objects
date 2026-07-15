@@ -101,7 +101,7 @@ final class Generator
         $value = array_key_exists($key, $config) ? $config[$key] : $default;
 
         if ($value !== null && (! is_string($value) || $value === '')) {
-            throw new EnumObjectsException("enum-objects.{$key} must be a nonempty string or null.");
+            throw new EnumObjectsException("enum-objects.{$key} must be a non-empty string or null.");
         }
 
         return $value;
