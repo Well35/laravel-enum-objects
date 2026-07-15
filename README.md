@@ -40,7 +40,7 @@ so the frontend can do:
 ```ts
 import { BrowseSort } from '@/enums/BrowseSort';
 
-Object.values(BrowseSort)          // option lists with labels, no hand-maintained arrays
+Object.values(BrowseSort)          // option lists with labels
 BrowseSort.Popular.value           // no magic strings
 const foo: BrowseSort = 'newest'   // union type 'newest' | 'popular'
 const bar: BrowseSort = 'newst'    // Error: tyop caught before runtime
