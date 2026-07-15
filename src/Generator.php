@@ -54,7 +54,15 @@ final class Generator
         }
 
         $format = $formatOverride ?? self::stringOption($config, 'format', 'ts');
+        $nameKey = self::keyOption($config, 'name_key', 'name');
         $valueKey = self::keyOption($config, 'value_key', 'value');
+        $labelKey = self::keyOption($config, 'label_key', 'label');
+
+        $keys = array_filter([$nameKey, $valueKey, $labelKey]);
+
+        if (count($keys) !== count(array_unique($keys))) {
+            throw new EnumObjectsException('enum-objects built-in key names must be unique.');
+        }
 
         $driver = match ($format) {
             'ts' => new TypeScriptDriver($valueKey),
@@ -67,9 +75,9 @@ final class Generator
             outputPath: self::absolute(self::stringOption($config, 'output_path', 'resources/js/enums')),
             driver: $driver,
             labelMethod: self::stringOption($config, 'label_method', 'label'),
-            nameKey: self::keyOption($config, 'name_key', 'name'),
+            nameKey: $nameKey,
             valueKey: $valueKey,
-            labelKey: self::keyOption($config, 'label_key', 'label'),
+            labelKey: $labelKey,
         );
     }
 
@@ -78,8 +86,8 @@ final class Generator
     {
         $value = $config[$key] ?? $default;
 
-        if (! is_string($value)) {
-            throw new EnumObjectsException("enum-objects.{$key} must be a string.");
+        if (! is_string($value) || $value === '') {
+            throw new EnumObjectsException("enum-objects.{$key} must be a non-empty string.");
         }
 
         return $value;
@@ -92,8 +100,8 @@ final class Generator
     {
         $value = array_key_exists($key, $config) ? $config[$key] : $default;
 
-        if ($value !== null && ! is_string($value)) {
-            throw new EnumObjectsException("enum-objects.{$key} must be a string or null.");
+        if ($value !== null && (! is_string($value) || $value === '')) {
+            throw new EnumObjectsException("enum-objects.{$key} must be a nonempty string or null.");
         }
 
         return $value;

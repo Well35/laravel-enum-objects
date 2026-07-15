@@ -1,6 +1,8 @@
 <?php
 
 use Well35\EnumObjects\EnumObjects;
+use Well35\EnumObjects\Exceptions\EnumObjectsException;
+use Well35\EnumObjects\Generator;
 
 it('generates one file per enum, mirroring nested namespaces into directories', function () {
     $this->artisan('enum-objects:generate')->assertExitCode(0);
@@ -95,6 +97,18 @@ it('falls back to the whole case object union when the value key is omitted', fu
         ->toContain('Newest: { name: "Newest", label: "Newest" }')
         ->toContain('export type BrowseSort = (typeof BrowseSort)[keyof typeof BrowseSort];');
 });
+
+it('rejects base property keys that collide', function () {
+    config()->set('enum-objects.name_key', 'value');
+
+    Generator::fromConfig();
+})->throws(EnumObjectsException::class, 'distinct');
+
+it('rejects empty base property keys', function () {
+    config()->set('enum-objects.value_key', '');
+
+    Generator::fromConfig();
+})->throws(EnumObjectsException::class, 'non-empty');
 
 it('renders json when the format is overridden', function () {
     $this->artisan('enum-objects:generate', ['--format' => 'json'])->assertExitCode(0);
