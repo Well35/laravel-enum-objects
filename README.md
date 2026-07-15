@@ -1,5 +1,10 @@
 # laravel-enum-objects
 
+[![Tests](https://github.com/Well35/laravel-enum-objects/actions/workflows/tests.yml/badge.svg)](https://github.com/Well35/laravel-enum-objects/actions/workflows/tests.yml)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/well35/laravel-enum-objects.svg)](https://packagist.org/packages/well35/laravel-enum-objects)
+[![Total Downloads](https://img.shields.io/packagist/dt/well35/laravel-enum-objects.svg)](https://packagist.org/packages/well35/laravel-enum-objects)
+[![License](https://img.shields.io/packagist/l/well35/laravel-enum-objects.svg)](https://github.com/Well35/laravel-enum-objects/blob/main/LICENSE)
+
 Generate frontend enum objects from your PHP enums, so the backend
 enum is the single source of truth.
 
