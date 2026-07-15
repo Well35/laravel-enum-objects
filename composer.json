@@ -1,6 +1,6 @@
 {
     "name": "well35/laravel-enum-objects",
-    "description": "Generate frontend enum objects from PHP enums, so backend enums are the single source of truth for values and metadata.",
+    "description": "Generate frontend enum objects from PHP enums, so backend enums are the single source of truth.",
     "license": "MIT",
     "type": "library",
     "keywords": ["laravel", "enum", "typescript", "codegen", "frontend"],
