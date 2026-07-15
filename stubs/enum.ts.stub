@@ -4,4 +4,4 @@ export const {{ name }} = {
 {{ body }}
 } as const;
 
-export type {{ name }} = (typeof {{ name }})[keyof typeof {{ name }}]['value'];
+export type {{ name }} = (typeof {{ name }})[keyof typeof {{ name }}]{{ valueAccessor }};

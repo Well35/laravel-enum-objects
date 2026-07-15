@@ -1,6 +1,8 @@
 <?php
 
 use Well35\EnumObjects\EnumObjects;
+use Well35\EnumObjects\Exceptions\EnumObjectsException;
+use Well35\EnumObjects\Generator;
 
 it('generates one file per enum, mirroring nested namespaces into directories', function () {
     $this->artisan('enum-objects:generate')->assertExitCode(0);
@@ -25,7 +27,7 @@ export const BrowseSort = {
     Popular: { name: "Popular", value: "popular", label: "Most played" },
 } as const;
 
-export type BrowseSort = (typeof BrowseSort)[keyof typeof BrowseSort]['value'];
+export type BrowseSort = (typeof BrowseSort)[keyof typeof BrowseSort]["value"];
 
 TS);
 });
@@ -61,6 +63,52 @@ it('merges static and computed properties, case-level winning collisions', funct
         ->toContain('group: "special"')       // case-level beats class-level
         ->toContain('description: "A common item"');
 });
+
+it('renders custom base property keys and derives the type from the value key', function () {
+    config()->set('enum-objects.name_key', 'key');
+    config()->set('enum-objects.value_key', 'id');
+    config()->set('enum-objects.label_key', 'text');
+
+    $this->artisan('enum-objects:generate')->assertExitCode(0);
+
+    expect($this->generated('BrowseSort.ts'))
+        ->toContain('Newest: { key: "Newest", id: "newest", text: "Newest" }')
+        ->toContain('export type BrowseSort = (typeof BrowseSort)[keyof typeof BrowseSort]["id"];');
+});
+
+it('omits base properties configured as null', function () {
+    config()->set('enum-objects.name_key', null);
+    config()->set('enum-objects.label_key', null);
+
+    $this->artisan('enum-objects:generate')->assertExitCode(0);
+
+    expect($this->generated('BrowseSort.ts'))
+        ->toContain('Newest: { value: "newest" }')
+        ->not->toContain('name:')
+        ->not->toContain('label:');
+});
+
+it('falls back to the whole case object union when the value key is omitted', function () {
+    config()->set('enum-objects.value_key', null);
+
+    $this->artisan('enum-objects:generate')->assertExitCode(0);
+
+    expect($this->generated('BrowseSort.ts'))
+        ->toContain('Newest: { name: "Newest", label: "Newest" }')
+        ->toContain('export type BrowseSort = (typeof BrowseSort)[keyof typeof BrowseSort];');
+});
+
+it('rejects base property keys that collide', function () {
+    config()->set('enum-objects.name_key', 'value');
+
+    Generator::fromConfig();
+})->throws(EnumObjectsException::class, 'unique');
+
+it('rejects empty base property keys', function () {
+    config()->set('enum-objects.value_key', '');
+
+    Generator::fromConfig();
+})->throws(EnumObjectsException::class, 'non-empty');
 
 it('renders json when the format is overridden', function () {
     $this->artisan('enum-objects:generate', ['--format' => 'json'])->assertExitCode(0);

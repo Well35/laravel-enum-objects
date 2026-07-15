@@ -6,6 +6,7 @@ use FilesystemIterator;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;
+use Well35\EnumObjects\Exceptions\EnumObjectsException;
 
 /**
  * Maps configured namespace-to-directory pairs onto enum classes by

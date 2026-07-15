@@ -1,6 +1,6 @@
 <?php
 
-namespace Well35\EnumObjects;
+namespace Well35\EnumObjects\Exceptions;
 
 use RuntimeException;
 

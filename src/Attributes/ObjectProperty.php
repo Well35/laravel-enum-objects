@@ -12,6 +12,7 @@ use BackedEnum;
 #[Attribute(Attribute::TARGET_CLASS | Attribute::TARGET_CLASS_CONSTANT | Attribute::IS_REPEATABLE)]
 final readonly class ObjectProperty
 {
+    /** @param string|int|float|bool|array<array-key, mixed>|null $value */
     public function __construct(
         public string|BackedEnum $key,
         public string|int|float|bool|array|null $value,

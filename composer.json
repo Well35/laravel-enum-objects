@@ -15,7 +15,8 @@
     },
     "require-dev": {
         "orchestra/testbench": "^9.0|^10.0",
-        "pestphp/pest": "^3.8"
+        "pestphp/pest": "^3.8",
+        "phpstan/phpstan": "^2.2"
     },
     "autoload": {
         "psr-4": {
@@ -35,7 +36,8 @@
         }
     },
     "scripts": {
-        "test": "pest"
+        "test": "pest",
+        "analyse": "phpstan analyse"
     },
     "config": {
         "sort-packages": true,
