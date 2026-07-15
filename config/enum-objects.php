@@ -29,4 +29,12 @@ return [
     | Enums without it fall back to Str::headline() of the case name.
     */
     'label_method' => 'label',
+
+    /*
+    | Output keys for the three built-in properties on every case object.
+    | Set one to null to leave it out of the generated objects entirely.
+    */
+    'name_key' => 'name',
+    'value_key' => 'value',
+    'label_key' => 'label',
 ];

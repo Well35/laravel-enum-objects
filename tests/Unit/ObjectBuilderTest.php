@@ -1,7 +1,7 @@
 <?php
 
 use Well35\EnumObjects\EnumLocator;
-use Well35\EnumObjects\EnumObjectsException;
+use Well35\EnumObjects\Exceptions\EnumObjectsException;
 use Well35\EnumObjects\ObjectBuilder;
 use Well35\EnumObjects\Tests\Fixtures\Enums\ItemRarity;
 use Well35\EnumObjects\Tests\Fixtures\Invalid\BadComputedProperty;

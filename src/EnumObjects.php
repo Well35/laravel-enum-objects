@@ -16,13 +16,11 @@ final class EnumObjects
     {
         $drift = Generator::fromConfig()->check();
 
-        if ($drift !== []) {
-            Assert::fail(
-                "Enum objects are out of sync with PHP enums:\n  - ".implode("\n  - ", $drift).
-                "\nRun `php artisan enum-objects:generate` and commit the result."
-            );
-        }
-
-        Assert::assertTrue(true);
+        Assert::assertSame(
+            [],
+            $drift,
+            "Enum objects are out of sync with PHP enums:\n  - ".implode("\n  - ", $drift).
+            "\nRun `php artisan enum-objects:generate` and commit the result."
+        );
     }
 }

@@ -21,12 +21,15 @@ class GenerateCommand extends Command
     public function handle(): int
     {
         if ($this->option('paths')) {
-            $this->line(json_encode(array_values(config('enum-objects.paths'))));
+            $paths = config('enum-objects.paths');
+
+            $this->line(json_encode(is_array($paths) ? array_values($paths) : [], JSON_THROW_ON_ERROR));
 
             return self::SUCCESS;
         }
 
-        $generator = Generator::fromConfig($this->option('format'));
+        $format = $this->option('format');
+        $generator = Generator::fromConfig(is_string($format) ? $format : null);
 
         if ($this->option('check')) {
             return $this->check($generator);

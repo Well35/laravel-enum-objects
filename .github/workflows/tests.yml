@@ -26,3 +26,5 @@ jobs:
       - uses: ramsey/composer-install@v3
 
       - run: vendor/bin/pest
+
+      - run: vendor/bin/phpstan analyse --no-progress

@@ -32,7 +32,7 @@ export const BrowseSort = {
     Popular: { name: "Popular", value: "popular", label: "Most played" },
 } as const;
 
-export type BrowseSort = (typeof BrowseSort)[keyof typeof BrowseSort]['value'];
+export type BrowseSort = (typeof BrowseSort)[keyof typeof BrowseSort]["value"];
 ```
 
 so the frontend can do:
@@ -146,6 +146,52 @@ enum Priority: int
 
 Excluded cases drop out of the union type too, so don't exclude anything the API still returns.
 
+### Inertia, Vue, React
+
+The generated files are plain data, so nothing framework specific to set up.
+
+Laravel serializes backed enums to their value, so an enum sent through
+an Inertia prop (or any JSON response) arrives already matching the
+generated type:
+
+```php
+return Inertia::render('Browse', [
+    'sort' => BrowseSort::Popular,   // arrives as 'popular'
+]);
+```
+
+```ts
+defineProps<{ sort: BrowseSort }>();   // 'newest' | 'popular'
+```
+
+Vue: a select built from the enum:
+
+```vue
+<script setup lang="ts">
+import { BrowseSort } from '@/enums/BrowseSort';
+</script>
+
+<template>
+    <select>
+        <option v-for="option in BrowseSort" :key="option.name" :value="option.value">
+            {{ option.label }}
+        </option>
+    </select>
+</template>
+```
+
+React: extra properties looked up from the value the backend sent:
+
+```tsx
+import { ItemRarity } from '@/enums/ItemRarity';
+
+export function RarityBadge({ rarity }: { rarity: ItemRarity }) {
+    const meta = Object.values(ItemRarity).find(option => option.value === rarity)!;
+
+    return <span style={{ color: meta.color }}>{meta.label}</span>;
+}
+```
+
 ### Keeping frontend and backend in sync
 
 Add this one test and CI fails whenever an enum changed without
@@ -189,6 +235,10 @@ return [
     'output_path' => 'resources/js/enums',    // generated files + manifest go here
     'format' => 'ts',                         // ts | json
     'label_method' => 'label',
+    // output keys for the built-in properties
+    'name_key' => 'name',
+    'value_key' => 'value',
+    'label_key' => 'label',
 ];
 ```
 

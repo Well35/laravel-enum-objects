@@ -2,6 +2,7 @@
 
 namespace Well35\EnumObjects;
 
+use BackedEnum;
 use Illuminate\Support\Str;
 use ReflectionEnum;
 use ReflectionMethod;
@@ -9,6 +10,7 @@ use UnitEnum;
 use Well35\EnumObjects\Attributes\ComputedProperty;
 use Well35\EnumObjects\Attributes\Excluded;
 use Well35\EnumObjects\Attributes\ObjectProperty;
+use Well35\EnumObjects\Exceptions\EnumObjectsException;
 
 /**
  * Turns one enum class into a plain array of per-case objects.
@@ -17,6 +19,9 @@ final readonly class ObjectBuilder
 {
     public function __construct(
         private string $labelMethod = 'label',
+        private ?string $nameKey = 'name',
+        private ?string $valueKey = 'value',
+        private ?string $labelKey = 'label',
     ) {}
 
     /**
@@ -29,7 +34,6 @@ final readonly class ObjectBuilder
         $enum = new ReflectionEnum($class);
         $classProperties = $this->objectProperties($enum->getAttributes(ObjectProperty::class));
         $computedProperties = $this->computedProperties($enum);
-        $isBacked = $enum->isBacked();
         $hasLabel = $enum->hasMethod($this->labelMethod);
 
         $objects = [];
@@ -41,13 +45,21 @@ final readonly class ObjectBuilder
 
             $case = $reflectionCase->getValue();
 
-            $object = [
-                'name' => $case->name,
-                'value' => $isBacked ? $case->value : $case->name,
-                'label' => $hasLabel
+            $object = [];
+
+            if ($this->nameKey !== null) {
+                $object[$this->nameKey] = $case->name;
+            }
+
+            if ($this->valueKey !== null) {
+                $object[$this->valueKey] = $case instanceof BackedEnum ? $case->value : $case->name;
+            }
+
+            if ($this->labelKey !== null) {
+                $object[$this->labelKey] = $hasLabel
                     ? $case->{$this->labelMethod}()
-                    : Str::headline($case->name),
-            ];
+                    : Str::headline($case->name);
+            }
 
             foreach ($classProperties as $key => $value) {
                 $object[$key] = $value;
@@ -67,7 +79,10 @@ final readonly class ObjectBuilder
         return $objects;
     }
 
-    /** @return array<string, string> */
+    /**
+     * @param ReflectionEnum<UnitEnum> $enum
+     * @return array<string, string>
+     */
     private function computedProperties(ReflectionEnum $enum): array
     {
         $properties = [];
@@ -93,7 +108,7 @@ final readonly class ObjectBuilder
     private function normalize(mixed $value): mixed
     {
         if ($value instanceof UnitEnum) {
-            return $value instanceof \BackedEnum ? $value->value : $value->name;
+            return $value instanceof BackedEnum ? $value->value : $value->name;
         }
 
         if (is_array($value)) {
@@ -119,8 +134,8 @@ final readonly class ObjectBuilder
         return $properties;
     }
 
-    private function keyOf(string|\BackedEnum $key): string
+    private function keyOf(string|BackedEnum $key): string
     {
-        return $key instanceof \BackedEnum ? (string) $key->value : $key;
+        return $key instanceof BackedEnum ? (string) $key->value : $key;
     }
 }

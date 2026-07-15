@@ -8,6 +8,7 @@ use Well35\EnumObjects\Attributes\Excluded;
 use Well35\EnumObjects\Drivers\Driver;
 use Well35\EnumObjects\Drivers\JsonDriver;
 use Well35\EnumObjects\Drivers\TypeScriptDriver;
+use Well35\EnumObjects\Exceptions\EnumObjectsException;
 
 /**
  * Pruning only deletes files listed in the manifest (.enum-objects.json),
@@ -23,30 +24,79 @@ final class Generator
         private readonly string $outputPath,
         private readonly Driver $driver,
         private readonly string $labelMethod = 'label',
+        private readonly ?string $nameKey = 'name',
+        private readonly ?string $valueKey = 'value',
+        private readonly ?string $labelKey = 'label',
     ) {}
 
     public static function fromConfig(?string $formatOverride = null): self
     {
         $config = config('enum-objects');
 
-        $paths = array_map(function ($path) {
-            return self::absolute($path);
-        }, $config['paths']);
+        if (! is_array($config)) {
+            throw new EnumObjectsException('The enum-objects config is missing.');
+        }
 
-        $format = $formatOverride ?? $config['format'];
+        $configuredPaths = $config['paths'] ?? null;
+
+        if (! is_array($configuredPaths)) {
+            throw new EnumObjectsException('enum-objects.paths must be an array of namespace => directory.');
+        }
+
+        $paths = [];
+
+        foreach ($configuredPaths as $namespace => $directory) {
+            if (! is_string($namespace) || ! is_string($directory)) {
+                throw new EnumObjectsException('enum-objects.paths must map namespace strings to directory strings.');
+            }
+
+            $paths[$namespace] = self::absolute($directory);
+        }
+
+        $format = $formatOverride ?? self::stringOption($config, 'format', 'ts');
+        $valueKey = self::keyOption($config, 'value_key', 'value');
 
         $driver = match ($format) {
-            'ts' => new TypeScriptDriver(),
+            'ts' => new TypeScriptDriver($valueKey),
             'json' => new JsonDriver(),
             default => throw new EnumObjectsException("Unknown enum-objects format: {$format}."),
         };
 
         return new self(
             paths: $paths,
-            outputPath: self::absolute($config['output_path']),
+            outputPath: self::absolute(self::stringOption($config, 'output_path', 'resources/js/enums')),
             driver: $driver,
-            labelMethod: $config['label_method'] ?? 'label',
+            labelMethod: self::stringOption($config, 'label_method', 'label'),
+            nameKey: self::keyOption($config, 'name_key', 'name'),
+            valueKey: $valueKey,
+            labelKey: self::keyOption($config, 'label_key', 'label'),
         );
+    }
+
+    /** @param array<array-key, mixed> $config */
+    private static function stringOption(array $config, string $key, string $default): string
+    {
+        $value = $config[$key] ?? $default;
+
+        if (! is_string($value)) {
+            throw new EnumObjectsException("enum-objects.{$key} must be a string.");
+        }
+
+        return $value;
+    }
+
+    /**
+     * @param array<array-key, mixed> $config
+     */
+    private static function keyOption(array $config, string $key, string $default): ?string
+    {
+        $value = array_key_exists($key, $config) ? $config[$key] : $default;
+
+        if ($value !== null && ! is_string($value)) {
+            throw new EnumObjectsException("enum-objects.{$key} must be a string or null.");
+        }
+
+        return $value;
     }
 
     /**
@@ -55,7 +105,7 @@ final class Generator
      */
     public function plan(): array
     {
-        $builder = new ObjectBuilder($this->labelMethod);
+        $builder = new ObjectBuilder($this->labelMethod, $this->nameKey, $this->valueKey, $this->labelKey);
         $files = [];
         $warnings = [];
 
@@ -91,7 +141,7 @@ final class Generator
 
             if (! is_file($target)) {
                 $drift[] = "missing: {$relative}";
-            } elseif ($this->normalize(file_get_contents($target)) !== $this->normalize($content)) {
+            } elseif ($this->normalize($this->contents($target)) !== $this->normalize($content)) {
                 $drift[] = "stale: {$relative}";
             }
         }
@@ -107,7 +157,7 @@ final class Generator
 
         if (! is_file($manifestPath)) {
             $drift[] = 'missing: '.self::MANIFEST;
-        } elseif ($this->normalize(file_get_contents($manifestPath)) !== $this->normalize($expected)) {
+        } elseif ($this->normalize($this->contents($manifestPath)) !== $this->normalize($expected)) {
             $drift[] = 'stale: '.self::MANIFEST;
         }
 
@@ -127,7 +177,7 @@ final class Generator
         foreach ($plan['files'] as $relative => $content) {
             $target = $this->outputPath.'/'.$relative;
 
-            if (is_file($target) && $this->normalize(file_get_contents($target)) === $this->normalize($content)) {
+            if (is_file($target) && $this->normalize($this->contents($target)) === $this->normalize($content)) {
                 $report['unchanged'][] = $relative;
                 continue;
             }
@@ -155,7 +205,7 @@ final class Generator
         $manifestPath = $this->outputPath.'/'.self::MANIFEST;
         $manifest = $this->renderManifest(array_keys($plan['files']));
 
-        if (! is_file($manifestPath) || $this->normalize(file_get_contents($manifestPath)) !== $this->normalize($manifest)) {
+        if (! is_file($manifestPath) || $this->normalize($this->contents($manifestPath)) !== $this->normalize($manifest)) {
             if (! is_dir($this->outputPath)) {
                 mkdir($this->outputPath, 0755, recursive: true);
             }
@@ -175,8 +225,8 @@ final class Generator
             return [];
         }
 
-        $decoded = json_decode(file_get_contents($path), associative: true);
-        $files = $decoded['files'] ?? [];
+        $decoded = json_decode($this->contents($path), associative: true);
+        $files = is_array($decoded) ? ($decoded['files'] ?? []) : [];
 
         return is_array($files) ? array_values(array_filter($files, is_string(...))) : [];
     }
@@ -186,8 +236,19 @@ final class Generator
     {
         return json_encode([
             'generated_by' => 'well35/laravel-enum-objects',
-            'files' => array_values($files),
-        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n";
+            'files' => $files,
+        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR)."\n";
+    }
+
+    private function contents(string $path): string
+    {
+        $contents = file_get_contents($path);
+
+        if ($contents === false) {
+            throw new EnumObjectsException("Unable to read {$path}.");
+        }
+
+        return $contents;
     }
 
     private function removeEmptyDirectories(string $directory): void
