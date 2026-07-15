@@ -7,7 +7,7 @@ use Well35\EnumObjects\Exceptions\EnumObjectsException;
 final readonly class TypeScriptDriver implements Driver
 {
     public function __construct(
-        private ?string $valueKey = 'value',
+        private ?string $valueKey,
     ) {}
 
     public function render(string $name, string $class, array $cases): string

@@ -23,10 +23,10 @@ final class Generator
         private readonly array $paths,
         private readonly string $outputPath,
         private readonly Driver $driver,
-        private readonly string $labelMethod = 'label',
-        private readonly ?string $nameKey = 'name',
-        private readonly ?string $valueKey = 'value',
-        private readonly ?string $labelKey = 'label',
+        private readonly string $labelMethod,
+        private readonly ?string $nameKey,
+        private readonly ?string $valueKey,
+        private readonly ?string $labelKey,
     ) {}
 
     public static function fromConfig(?string $formatOverride = null): self
@@ -53,10 +53,10 @@ final class Generator
             $paths[$namespace] = self::absolute($directory);
         }
 
-        $format = $formatOverride ?? self::stringOption($config, 'format', 'ts');
-        $nameKey = self::keyOption($config, 'name_key', 'name');
-        $valueKey = self::keyOption($config, 'value_key', 'value');
-        $labelKey = self::keyOption($config, 'label_key', 'label');
+        $format = $formatOverride ?? self::stringOption($config, 'format');
+        $nameKey = self::keyOption($config, 'name_key');
+        $valueKey = self::keyOption($config, 'value_key');
+        $labelKey = self::keyOption($config, 'label_key');
 
         $keys = array_filter([$nameKey, $valueKey, $labelKey]);
 
@@ -72,9 +72,9 @@ final class Generator
 
         return new self(
             paths: $paths,
-            outputPath: self::absolute(self::stringOption($config, 'output_path', 'resources/js/enums')),
+            outputPath: self::absolute(self::stringOption($config, 'output_path')),
             driver: $driver,
-            labelMethod: self::stringOption($config, 'label_method', 'label'),
+            labelMethod: self::stringOption($config, 'label_method'),
             nameKey: $nameKey,
             valueKey: $valueKey,
             labelKey: $labelKey,
@@ -82,9 +82,9 @@ final class Generator
     }
 
     /** @param array<array-key, mixed> $config */
-    private static function stringOption(array $config, string $key, string $default): string
+    private static function stringOption(array $config, string $key): string
     {
-        $value = $config[$key] ?? $default;
+        $value = $config[$key] ?? null;
 
         if (! is_string($value) || $value === '') {
             throw new EnumObjectsException("enum-objects.{$key} must be a non-empty string.");
@@ -96,9 +96,13 @@ final class Generator
     /**
      * @param array<array-key, mixed> $config
      */
-    private static function keyOption(array $config, string $key, string $default): ?string
+    private static function keyOption(array $config, string $key): ?string
     {
-        $value = array_key_exists($key, $config) ? $config[$key] : $default;
+        if (! array_key_exists($key, $config)) {
+            throw new EnumObjectsException("enum-objects.{$key} is missing from the config.");
+        }
+
+        $value = $config[$key];
 
         if ($value !== null && (! is_string($value) || $value === '')) {
             throw new EnumObjectsException("enum-objects.{$key} must be a non-empty string or null.");

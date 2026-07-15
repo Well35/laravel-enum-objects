@@ -18,10 +18,10 @@ use Well35\EnumObjects\Exceptions\EnumObjectsException;
 final readonly class ObjectBuilder
 {
     public function __construct(
-        private string $labelMethod = 'label',
-        private ?string $nameKey = 'name',
-        private ?string $valueKey = 'value',
-        private ?string $labelKey = 'label',
+        private string $labelMethod,
+        private ?string $nameKey,
+        private ?string $valueKey,
+        private ?string $labelKey,
     ) {}
 
     /**
